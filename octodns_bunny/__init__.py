@@ -37,81 +37,81 @@ class BunnyDNSProvider(BaseProvider):
 
     def _data_for_A(self, _type, records):
         return {
-            'ttl': records[0]['ttl'],
+            'ttl': records[0]['Ttl'],
             'type': _type,
-            'values': [r['data'] for r in records],
+            'values': [r['Value'] for r in records],
         }
 
     def _data_for_AAAA(self, _type, records):
         return {
-            'ttl': records[0]['ttl'],
+            'ttl': records[0]['Ttl'],
             'type': _type,
-            'values': [r['data'] for r in records],
+            'values': [r['Value'] for r in records],
         }
 
     def _data_for_CNAME(self, _type, records):
         # We can only have one value for CNAME
         record = records[0]
         return {
-            'ttl': records[0]['ttl'],
+            'ttl': records[0]['Ttl'],
             'type': _type,
-            'value': f'{record["data"]}.',
+            'value': f'{record["Value"]}.',
         }
 
     def _data_for_TXT(self, _type, records):
-        values = [value['data'].replace(';', '\\;') for value in records]
-        return {'ttl': records[0]['ttl'], 'type': _type, 'values': values}
+        values = [value['Value'].replace(';', '\\;') for value in records]
+        return {'ttl': records[0]['Ttl'], 'type': _type, 'values': values}
 
     def _data_for_MX(self, _type, records):
         values = []
         for record in records:
             values.append(
                 {
-                    'preference': record['priority'],
-                    'exchange': f'{record["data"]}.',
+                    'preference': record['Priority'],
+                    'exchange': f'{record["Value"]}.',
                 }
             )
-        return {'ttl': records[0]['ttl'], 'type': _type, 'values': values}
+        return {'ttl': records[0]['Ttl'], 'type': _type, 'values': values}
 
     def _data_for_SRV(self, _type, records):
         values = []
         for record in records:
-            target = f'{record["data"]}.' if record['data'] != "." else "."
+            target = f'{record["Value"]}.' if record['Value'] != "." else "."
             values.append(
                 {
-                    'port': record['port'],
-                    'priority': record['priority'],
+                    'port': record['Port'],
+                    'priority': record['Priority'],
                     'target': target,
-                    'weight': record['weight'],
+                    'weight': record['Weight'],
                 }
             )
-        return {'type': _type, 'ttl': records[0]['ttl'], 'values': values}
+        return {'type': _type, 'ttl': records[0]['Ttl'], 'values': values}
 
     def _data_for_CAA(self, _type, records):
         values = []
         for record in records:
             values.append(
                 {
-                    'flags': record['flags'],
-                    'tag': record['tag'],
-                    'value': record['data'],
+                    'flags': record['Flags'],
+                    'tag': record['Tag'],
+                    'value': record['Value'],
                 }
             )
-        return {'ttl': records[0]['ttl'], 'type': _type, 'values': values}
+        return {'ttl': records[0]['Ttl'], 'type': _type, 'values': values}
 
 
     def _data_for_PTR(self, _type, records):
         return {
-            'ttl': records[0]['ttl'],
+            'ttl': records[0]['Ttl'],
             'type': _type,
-            'values': [r['data'] for r in records],
+            'values': [r['Value'] for r in records],
         }
 
     def _data_for_NS(self, _type, records):
         values = []
         for record in records:
-            values.append(f'{record["data"]}.')
-        return {'ttl': records[0]['ttl'], 'type': _type, 'values': values}
+            values.append(f'{record["Value"]}.')
+        return {'ttl': records[0]['Ttl'], 'type': _type, 'values': values}
 
     def _params_for_A(self, record):
         for value in record.values:
