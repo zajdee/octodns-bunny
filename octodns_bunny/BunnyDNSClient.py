@@ -204,7 +204,7 @@ class BunnyDNSClient(object):
         # Abstract away the type IDs
         fixed_records = []
         for record in domain_contents['Records']:
-            record['Id'] = self._map_record_type_to_string(record['Id'], reverse=True)
+            record['Type'] = self._map_record_type_to_string(record['Type'], reverse=True)
             fixed_records.append(record)
 
         return fixed_records
