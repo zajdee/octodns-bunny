@@ -186,7 +186,6 @@ class BunnyDNSClient(object):
         type_map = {
             "A": 0,
             "AAAA": 1,
-            "ALIAS": 2,  # Supported, but called CNAME in BunnyDNS
             "CNAME": 2,
             "TXT": 3,
             "MX": 4,
@@ -201,6 +200,10 @@ class BunnyDNSClient(object):
         }
         if reverse:
             type_map = {v: k for k, v in type_map.items()}
+        else:
+            # ALIAS record on root label is supported,
+            # but called CNAME in BunnyDNS
+            type_map["ALIAS"] = type_map["CNAME"]
         type_mapped = type_map[type]
         return type_mapped
 
