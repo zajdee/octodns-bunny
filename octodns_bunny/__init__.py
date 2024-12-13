@@ -38,6 +38,11 @@ class BunnyDNSProvider(BaseProvider):
             "values": [r["Value"] for r in records],
         }
 
+    def _data_for_ALIAS(self, _type, records):
+        # Bunny DNS supports CNAME on root label, so let's fall through
+        # We should probably check if this is the root label (`@`)
+        return self._data_for_CNAME(_type=_type, records=records)
+
     def _data_for_CNAME(self, _type, records):
         # We can only have one value for CNAME
         record = records[0]
@@ -118,6 +123,10 @@ class BunnyDNSProvider(BaseProvider):
                 "Ttl": record.ttl,
                 "Type": record._type,
             }
+
+    def _params_for_ALIAS(self, record):
+        # Fall through to CNAME
+        return self._params_for_CNAME(record=record)
 
     def _params_for_CNAME(self, record):
         yield {
