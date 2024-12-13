@@ -7,6 +7,8 @@ from octodns.record import Record
 from .BunnyDNSClient import BunnyDNSClient
 from .BunnyDNSClientAPIException import BunnyDNSClientAPIExceptionDomainNotFound
 
+__version__ = '0.0.1'
+
 
 class BunnyDNSProvider(BaseProvider):
     SUPPORTS_GEO = False
