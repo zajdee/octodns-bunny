@@ -14,7 +14,18 @@ class BunnyDNSProvider(BaseProvider):
     SUPPORTS_GEO = False
     SUPPORTS_DYNAMIC = False
     SUPPORTS_ROOT_NS = True
-    SUPPORTS = {"A", "AAAA", "CNAME", "TXT", "MX", "SRV", "CAA", "PTR", "NS"}
+    SUPPORTS = {
+        "A",
+        "AAAA",
+        "ALIAS",
+        "CNAME",
+        "TXT",
+        "MX",
+        "SRV",
+        "CAA",
+        "PTR",
+        "NS",
+    }
 
     def __init__(self, id, token, *args, **kwargs):
         self.log = logging.getLogger(f"BunnyDNSProvider[{id}]")
