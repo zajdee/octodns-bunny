@@ -186,6 +186,7 @@ class BunnyDNSClient(object):
         type_map = {
             "A": 0,
             "AAAA": 1,
+            "ALIAS": 2,  # Supported, but called CNAME in BunnyDNS
             "CNAME": 2,
             "TXT": 3,
             "MX": 4,
