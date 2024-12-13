@@ -1,11 +1,11 @@
-from requests import Session, Request
+from requests import Request, Session
+
 from .BunnyDNSClientAPIException import (
-    BunnyDNSClientAPIException,
     BunnyDNSClientAPIException400,
     BunnyDNSClientAPIException401,
     BunnyDNSClientAPIException404,
     BunnyDNSClientAPIException500,
-    BunnyDNSClientAPIExceptionDomainNotFound
+    BunnyDNSClientAPIExceptionDomainNotFound,
 )
 
 
@@ -17,20 +17,29 @@ class BunnyDNSClient(object):
         self._api_session = Session()
         self._api_session.headers.update(
             {
-                'AccessKey': f'{token}',
-                'User-Agent': f'octodns-bunny',
-                "Accept": "application/json"
+                "AccessKey": f"{token}",
+                "User-Agent": "octodns-bunny",
+                "Accept": "application/json",
             }
         )
 
-    def _request(self, method, path, headers, data, exception_messages, valid_status_codes, params):
+    def _request(
+        self,
+        method,
+        path,
+        headers,
+        data,
+        exception_messages,
+        valid_status_codes,
+        params,
+    ):
         prepared_api_call = self._api_session.prepare_request(
             Request(
                 method,
                 self._api_url + path,
                 json=data,
                 headers=headers,
-                params=params
+                params=params,
             )
         )
         api_call = self._api_session.send(prepared_api_call, timeout=10)
@@ -55,11 +64,11 @@ class BunnyDNSClient(object):
         zones = []
         exception_messages = {
             401: "The request authorization failed",
-            500: "Internal Server Error"
+            500: "Internal Server Error",
         }
         page = 1
         zone_api_call = {}
-        while page == 1 or zone_api_call['HasMoreItems'] is True:
+        while page == 1 or zone_api_call["HasMoreItems"] is True:
             zone_api_call = self._request(
                 method="GET",
                 path="/dnszone",
@@ -67,9 +76,9 @@ class BunnyDNSClient(object):
                 data=None,
                 exception_messages=exception_messages,
                 valid_status_codes=[200],
-                params={"page": page, "per_page": 1000}
+                params={"page": page, "per_page": 1000},
             )
-            zones.extend(zone_api_call['Items'])
+            zones.extend(zone_api_call["Items"])
             page += 1
 
         return zones
@@ -78,7 +87,7 @@ class BunnyDNSClient(object):
         exception_messages = {
             400: "Failed adding the DNS Zone. Model validation failed",
             401: "The request authorization failed",
-            500: "Internal Server Error"
+            500: "Internal Server Error",
         }
         zone_api_call = {}
         zone_api_call = self._request(
@@ -88,7 +97,7 @@ class BunnyDNSClient(object):
             data={"Domain": domain},
             exception_messages=exception_messages,
             valid_status_codes=[201],
-            params=None
+            params=None,
         )
         return zone_api_call
 
@@ -97,7 +106,7 @@ class BunnyDNSClient(object):
             400: "Failed adding the DNS record. Model validation failed.",
             401: "The request authorization failed",
             404: "The DNS Zone with the requested ID does not exist.",
-            500: "Internal Server Error"
+            500: "Internal Server Error",
         }
 
         # Get Domain ID from list
@@ -106,7 +115,7 @@ class BunnyDNSClient(object):
         except BunnyDNSClientAPIException404:
             raise BunnyDNSClientAPIExceptionDomainNotFound
         # Map Record Type to integer
-        params['Type'] = self._map_record_type_to_string(params['Type'])
+        params["Type"] = self._map_record_type_to_string(params["Type"])
         add_record_api_call = {}
         add_record_api_call = self._request(
             method="PUT",
@@ -115,7 +124,7 @@ class BunnyDNSClient(object):
             data=params,
             exception_messages=exception_messages,
             valid_status_codes=[201],
-            params=None
+            params=None,
         )
         return add_record_api_call
 
@@ -124,7 +133,7 @@ class BunnyDNSClient(object):
             400: "Failed deleting the DNS Record. See error response.",
             401: "The request authorization failed",
             404: "The DNS Zone or DNS Record with the requested ID does not exist.",
-            500: "Internal Server Error"
+            500: "Internal Server Error",
         }
 
         # Get Domain ID from list
@@ -137,7 +146,7 @@ class BunnyDNSClient(object):
             valid_status_codes=[204],
             params=None,
             data=None,
-            headers=None
+            headers=None,
         )
         return add_record_api_call
 
@@ -145,7 +154,7 @@ class BunnyDNSClient(object):
         exception_messages = {
             401: "The request authorization failed",
             404: "The DNS Zone with the requested ID does not exist.",
-            500: "Internal Server Error"
+            500: "Internal Server Error",
         }
         # Get Domain ID from list
         try:
@@ -160,7 +169,7 @@ class BunnyDNSClient(object):
             valid_status_codes=[200],
             params=None,
             data=None,
-            headers=None
+            headers=None,
         )
         return add_record_api_call
 
@@ -191,7 +200,7 @@ class BunnyDNSClient(object):
             "CAA": 9,
             "PTR": 10,
             "Script": 11,
-            "NS": 12
+            "NS": 12,
         }
         if reverse:
             type_map = {v: k for k, v in type_map.items()}
@@ -203,8 +212,10 @@ class BunnyDNSClient(object):
 
         # Abstract away the type IDs
         fixed_records = []
-        for record in domain_contents['Records']:
-            record['Type'] = self._map_record_type_to_string(record['Type'], reverse=True)
+        for record in domain_contents["Records"]:
+            record["Type"] = self._map_record_type_to_string(
+                record["Type"], reverse=True
+            )
             fixed_records.append(record)
 
         return fixed_records
