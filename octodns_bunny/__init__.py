@@ -20,7 +20,7 @@ class BunnyDNSProvider(BaseProvider):
         self.log = logging.getLogger(f"BunnyDNSProvider[{id}]")
         self.log.debug("__init__: id=%s, token=***", id)
         super().__init__(id, *args, **kwargs)
-        self._client = BunnyDNSClient(token)
+        self._client = BunnyDNSClient(token=token)
 
         self._zone_records = {}
 

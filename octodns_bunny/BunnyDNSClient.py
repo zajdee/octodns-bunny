@@ -89,8 +89,7 @@ class BunnyDNSClient(object):
             401: "The request authorization failed",
             500: "Internal Server Error",
         }
-        zone_api_call = {}
-        zone_api_call = self._request(
+        add_zone_api_call = self._request(
             method="POST",
             path="/dnszone",
             headers={"content-type": "application/json"},
@@ -99,7 +98,7 @@ class BunnyDNSClient(object):
             valid_status_codes=[201],
             params=None,
         )
-        return zone_api_call
+        return add_zone_api_call
 
     def add_record(self, domain, params):
         exception_messages = {
@@ -116,7 +115,6 @@ class BunnyDNSClient(object):
             raise BunnyDNSClientAPIExceptionDomainNotFound
         # Map Record Type to integer
         params["Type"] = self._map_record_type_to_string(params["Type"])
-        add_record_api_call = {}
         add_record_api_call = self._request(
             method="PUT",
             path="/dnszone/" + str(domain_id) + "/records",
@@ -138,8 +136,7 @@ class BunnyDNSClient(object):
 
         # Get Domain ID from list
         domain_id = self._map_domain_name_to_id(domain)
-        add_record_api_call = {}
-        add_record_api_call = self._request(
+        delete_record_api_call = self._request(
             method="DELETE",
             path="/dnszone/" + str(domain_id) + "/records/" + record_id,
             exception_messages=exception_messages,
@@ -148,7 +145,7 @@ class BunnyDNSClient(object):
             data=None,
             headers=None,
         )
-        return add_record_api_call
+        return delete_record_api_call
 
     def get_domain(self, domain):
         exception_messages = {
@@ -161,8 +158,7 @@ class BunnyDNSClient(object):
             domain_id = self._map_domain_name_to_id(domain)
         except BunnyDNSClientAPIException404:
             raise BunnyDNSClientAPIExceptionDomainNotFound
-        add_record_api_call = {}
-        add_record_api_call = self._request(
+        get_domain_record_api_call = self._request(
             method="GET",
             path="/dnszone/" + str(domain_id),
             exception_messages=exception_messages,
@@ -171,7 +167,7 @@ class BunnyDNSClient(object):
             data=None,
             headers=None,
         )
-        return add_record_api_call
+        return get_domain_record_api_call
 
     def _map_domain_name_to_id(self, domain_name):
         # List Domains
