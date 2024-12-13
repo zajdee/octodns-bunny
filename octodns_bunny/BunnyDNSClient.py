@@ -182,7 +182,7 @@ class BunnyDNSClient(object):
         else:
             return domain_id
 
-    def _map_record_type_to_string(self, type, reverse=False):
+    def _map_record_type_to_string(self, type, reverse=False, name=None):
         type_map = {
             "A": 0,
             "AAAA": 1,
@@ -200,6 +200,14 @@ class BunnyDNSClient(object):
         }
         if reverse:
             type_map = {v: k for k, v in type_map.items()}
+            # Mapping back Bunny's CNAME to OctoDNS ALIAS record,
+            # but only for the root label (name is an empty string)
+            if isinstance(name, str) and not len(name):
+                type_map[2] = "ALIAS"
+        else:
+            # ALIAS record on root label is supported,
+            # but called CNAME in BunnyDNS
+            type_map["ALIAS"] = type_map["CNAME"]
         type_mapped = type_map[type]
         return type_mapped
 
@@ -210,7 +218,7 @@ class BunnyDNSClient(object):
         fixed_records = []
         for record in domain_contents["Records"]:
             record["Type"] = self._map_record_type_to_string(
-                record["Type"], reverse=True
+                record["Type"], reverse=True, name=record["Name"]
             )
             fixed_records.append(record)
 

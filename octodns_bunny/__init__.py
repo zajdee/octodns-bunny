@@ -14,7 +14,18 @@ class BunnyDNSProvider(BaseProvider):
     SUPPORTS_GEO = False
     SUPPORTS_DYNAMIC = False
     SUPPORTS_ROOT_NS = True
-    SUPPORTS = {"A", "AAAA", "CNAME", "TXT", "MX", "SRV", "CAA", "PTR", "NS"}
+    SUPPORTS = {
+        "A",
+        "AAAA",
+        "ALIAS",
+        "CNAME",
+        "TXT",
+        "MX",
+        "SRV",
+        "CAA",
+        "PTR",
+        "NS",
+    }
 
     def __init__(self, id, token, *args, **kwargs):
         self.log = logging.getLogger(f"BunnyDNSProvider[{id}]")
@@ -37,6 +48,11 @@ class BunnyDNSProvider(BaseProvider):
             "type": _type,
             "values": [r["Value"] for r in records],
         }
+
+    def _data_for_ALIAS(self, _type, records):
+        # Bunny DNS supports CNAME on root label, so let's fall through
+        # We should probably check if this is the root label (`@`)
+        return self._data_for_CNAME(_type=_type, records=records)
 
     def _data_for_CNAME(self, _type, records):
         # We can only have one value for CNAME
@@ -118,6 +134,10 @@ class BunnyDNSProvider(BaseProvider):
                 "Ttl": record.ttl,
                 "Type": record._type,
             }
+
+    def _params_for_ALIAS(self, record):
+        # Fall through to CNAME
+        return self._params_for_CNAME(record=record)
 
     def _params_for_CNAME(self, record):
         yield {
