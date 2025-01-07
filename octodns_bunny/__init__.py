@@ -118,6 +118,20 @@ class BunnyDNSProvider(BaseProvider):
             values.append(f'{record["Value"]}.')
         return {"ttl": records[0]["Ttl"], "type": _type, "values": values}
 
+    def _data_for_URLFWD(self, _type, records):
+        values = []
+        for record in records:
+            values.append(
+                {
+                    'path': "/",
+                    'target': record['Value'],
+                    'code': 301,
+                    'masking': 0,
+                    'query': 0,
+                }
+            )
+        return {"ttl": records[0]["Ttl"], "type": _type, "values": values}
+
     def _params_for_A(self, record):
         for value in record.values:
             yield {
@@ -219,10 +233,28 @@ class BunnyDNSProvider(BaseProvider):
             }
 
     def _transform_redirect(self, r):
-        return {'Value': f"redir://{r['Value']}", 'Name': r['Name']}
+        r.update({'Value': r['Value'], 'Name': r['Name'], 'Type': 'URLFWD'})
+        return r
+
+    def _transform_pullzone(self, r):
+        r.update(
+            {
+                'Value': f"pz://{r['LinkName']}",
+                'Name': r['Name'],
+                'Type': 'URLFWD',
+            }
+        )
+        return r
 
     def _transform_script(self, r):
-        return {'Value': f"script://{r['Value']}", 'Name': r['Name']}
+        r.update(
+            {
+                'Value': f"script://{r['Value']}",
+                'Name': r['Name'],
+                'Type': 'URLFWD',
+            }
+        )
+        return r
 
     def _transform_records(self, records):
         """
@@ -232,18 +264,18 @@ class BunnyDNSProvider(BaseProvider):
 
         Transforms PullZone, Redirect and Script Bunny records to URLFWD
         """
-        records = []
+        result = []
         for record in records:
             record_type = record['Type']
             if record_type == 'Redirect':
-                records.append(self._transform_redirect(record))
+                result.append(self._transform_redirect(record))
             elif record_type == 'PullZone':
-                records.append(self._transform_pullzone(record))
+                result.append(self._transform_pullzone(record))
             elif record_type == 'Script':
-                records.append(self._transform_script(record))
+                result.append(self._transform_script(record))
             else:
-                records.append(record)
-        return records
+                result.append(record)
+        return result
 
     def zone_records(self, zone):
         if zone.name not in self._zone_records:
@@ -300,10 +332,27 @@ class BunnyDNSProvider(BaseProvider):
         )
         return exists
 
+    def _transform_URLFWD(self, params):
+        target = params['Value'].target
+        if target.startswith('script://'):
+            params['ScriptId'] = target[9:]
+            params['Type'] = 'Script'
+        elif target.startswith('pz://'):
+            params['PullZoneId'] = target[5:]
+            # Value must be filled, but the value isn't considered by the API
+            params['Value'] = params['PullZoneId']
+            params['Type'] = 'PullZone'
+        else:
+            params['Type'] = 'Redirect'
+            params['Value'] = target
+        return params
+
     def _apply_Create(self, change):
         new = change.new
         params_for = getattr(self, f"_params_for_{new._type}")
         for params in params_for(new):
+            if params['Type'] == 'URLFWD':
+                params = self._transform_URLFWD(params)
             self._client.add_record(domain=new.zone.name[:-1], params=params)
 
     def _apply_Update(self, change):

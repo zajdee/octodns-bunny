@@ -48,6 +48,9 @@ class BunnyDNSClient(object):
         else:
             error_message = None
         if api_call.status_code in valid_status_codes:
+            # Bunny API returns HTTP 204 No Content for deletions
+            if api_call.status_code == 204:
+                return {}
             return api_call.json()
         elif api_call.status_code == 400:
             raise BunnyDNSClientAPIException400(error_message=error_message)
@@ -117,7 +120,7 @@ class BunnyDNSClient(object):
         params["Type"] = self._map_record_type_to_string(params["Type"])
         add_record_api_call = self._request(
             method="PUT",
-            path="/dnszone/" + str(domain_id) + "/records",
+            path=f"/dnszone/{domain_id}/records",
             headers={"Content-Type": "application/json"},
             data=params,
             exception_messages=exception_messages,
@@ -138,7 +141,7 @@ class BunnyDNSClient(object):
         domain_id = self._map_domain_name_to_id(domain)
         delete_record_api_call = self._request(
             method="DELETE",
-            path="/dnszone/" + str(domain_id) + "/records/" + record_id,
+            path=f"/dnszone/{domain_id}/records/{record_id}",
             exception_messages=exception_messages,
             valid_status_codes=[204],
             params=None,
