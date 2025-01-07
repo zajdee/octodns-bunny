@@ -130,7 +130,8 @@ class BunnyDNSProvider(BaseProvider):
                     'query': 0,
                 }
             )
-        return {"ttl": records[0]["Ttl"], "type": _type, "values": values}
+        ttl = self._ttl_URLFWD(record['Value'], records[0]["Ttl"])
+        return {"ttl": ttl, "type": _type, "values": values}
 
     def _params_for_A(self, record):
         for value in record.values:
@@ -224,13 +225,24 @@ class BunnyDNSProvider(BaseProvider):
             }
 
     def _params_for_URLFWD(self, record):
+        if len(record.values) != 1:
+            raise Exception(
+                "Incorrect URLFWD data, only one target is supported."
+            )
+        ttl = self._ttl_URLFWD(record.values[0].target, record.ttl)
         for value in record.values:
             yield {
                 "Value": value,
                 "Name": record.name,
-                "Ttl": 0,
+                "Ttl": ttl,
                 "Type": record._type,
             }
+
+    def _ttl_URLFWD(self, target, ttl):
+        if target.startswith('pz://'):
+            return ttl
+        else:
+            return 0
 
     def _transform_redirect(self, r):
         r.update({'Value': r['Value'], 'Name': r['Name'], 'Type': 'URLFWD'})
@@ -337,6 +349,7 @@ class BunnyDNSProvider(BaseProvider):
         if target.startswith('script://'):
             params['ScriptId'] = target[9:]
             params['Type'] = 'Script'
+            del params['Value']
         elif target.startswith('pz://'):
             params['PullZoneId'] = target[5:]
             # Value must be filled, but the value isn't considered by the API
