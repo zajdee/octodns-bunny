@@ -13,7 +13,7 @@ __version__ = '0.0.1'
 class BunnyDNSProvider(BaseProvider):
     SUPPORTS_GEO = False
     SUPPORTS_DYNAMIC = False
-    SUPPORTS_ROOT_NS = True
+    SUPPORTS_ROOT_NS = False
     SUPPORTS = {
         "A",
         "AAAA",
@@ -25,6 +25,7 @@ class BunnyDNSProvider(BaseProvider):
         "CAA",
         "PTR",
         "NS",
+        "URLFWD",
     }
 
     def __init__(self, id, token, *args, **kwargs):
@@ -208,10 +209,46 @@ class BunnyDNSProvider(BaseProvider):
                 "Type": record._type,
             }
 
+    def _params_for_URLFWD(self, record):
+        for value in record.values:
+            yield {
+                "Value": value,
+                "Name": record.name,
+                "Ttl": 0,
+                "Type": record._type,
+            }
+
+    def _transform_redirect(self, r):
+        return {'Value': f"redir://{r['Value']}", 'Name': r['Name']}
+
+    def _transform_script(self, r):
+        return {'Value': f"script://{r['Value']}", 'Name': r['Name']}
+
+    def _transform_records(self, records):
+        """
+        Transform Bunny-specific records to URLFWD
+        :param records:
+        :return: transformed records
+
+        Transforms PullZone, Redirect and Script Bunny records to URLFWD
+        """
+        records = []
+        for record in records:
+            record_type = record['Type']
+            if record_type == 'Redirect':
+                records.append(self._transform_redirect(record))
+            elif record_type == 'PullZone':
+                records.append(self._transform_pullzone(record))
+            elif record_type == 'Script':
+                records.append(self._transform_script(record))
+            else:
+                records.append(record)
+        return records
+
     def zone_records(self, zone):
         if zone.name not in self._zone_records:
             try:
-                self._zone_records[zone.name] = (
+                self._zone_records[zone.name] = self._transform_records(
                     self._client.lookup_domain_records(zone.name[:-1])
                 )
             except BunnyDNSClientAPIExceptionDomainNotFound:
