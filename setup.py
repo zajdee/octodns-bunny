@@ -1,17 +1,20 @@
 #!/usr/bin/env python
+"""Setup file to build this as a module."""
 
 from setuptools import find_packages, setup
 
 
 def descriptions():
-    with open('README.md') as fh:
+    """Create a module description."""
+    with open('README.md', encoding="utf-8") as fh:
         ret = fh.read()
         first = ret.split('\n', 1)[0].replace('#', '')
         return first, ret
 
 
 def version():
-    with open('octodns_bunny/__init__.py') as fh:
+    """Retrieve module version."""
+    with open('octodns_bunny/__init__.py', encoding="utf-8") as fh:
         for line in fh:
             if line.startswith('__version__'):
                 return line.split("'")[1]
@@ -40,6 +43,7 @@ setup(
             'readme_renderer[md]>=26.0',
             'twine>=3.4.2',
             'pylint==3.3.3',
+            'setuptools>=75.0.0',
         ),
         'test': tests_require,
     },

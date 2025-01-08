@@ -1,6 +1,8 @@
+"""A client to access BunnyDNS API."""
+
 from requests import Request, Session
 
-from .BunnyDNSClientAPIException import (
+from .client_exceptions import (
     BunnyDNSClientAPIException400,
     BunnyDNSClientAPIException401,
     BunnyDNSClientAPIException404,
@@ -9,7 +11,9 @@ from .BunnyDNSClientAPIException import (
 )
 
 
-class BunnyDNSClient(object):
+class BunnyDNSClient:
+    """Main client class."""
+
     def __init__(self, token):
         # Set API URL
         self._api_url = "https://api.bunny.net"
@@ -23,6 +27,8 @@ class BunnyDNSClient(object):
             }
         )
 
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
     def _request(
         self,
         method,
@@ -33,6 +39,7 @@ class BunnyDNSClient(object):
         valid_status_codes,
         params,
     ):
+        """Fire a BunnyDNS API request."""
         prepared_api_call = self._api_session.prepare_request(
             Request(
                 method,
@@ -44,7 +51,8 @@ class BunnyDNSClient(object):
         )
         api_call = self._api_session.send(prepared_api_call, timeout=10)
         if api_call.status_code in exception_messages.keys():
-            error_message = exception_messages[api_call.status_code]
+            # error_message = exception_messages[api_call.status_code]
+            error_message = f"{exception_messages[api_call.status_code]} Data: {api_call.text}"
         else:
             error_message = None
         if api_call.status_code in valid_status_codes:
@@ -52,18 +60,19 @@ class BunnyDNSClient(object):
             if api_call.status_code == 204:
                 return {}
             return api_call.json()
-        elif api_call.status_code == 400:
+        if api_call.status_code == 400:
             raise BunnyDNSClientAPIException400(error_message=error_message)
-        elif api_call.status_code == 401:
+        if api_call.status_code == 401:
             raise BunnyDNSClientAPIException401(error_message=error_message)
-        elif api_call.status_code == 404:
+        if api_call.status_code == 404:
             raise BunnyDNSClientAPIException404(error_message=error_message)
-        elif api_call.status_code == 500:
+        if api_call.status_code == 500:
             raise BunnyDNSClientAPIException500(error_message=api_call.text)
 
         return api_call.json()
 
     def list_zones(self):
+        """List zones."""
         zones = []
         exception_messages = {
             401: "The request authorization failed",
@@ -87,6 +96,7 @@ class BunnyDNSClient(object):
         return zones
 
     def add_zone(self, domain):
+        """Add a zone."""
         exception_messages = {
             400: "Failed adding the DNS Zone. Model validation failed",
             401: "The request authorization failed",
@@ -104,6 +114,7 @@ class BunnyDNSClient(object):
         return add_zone_api_call
 
     def add_record(self, domain, params):
+        """Add a record."""
         exception_messages = {
             400: "Failed adding the DNS record. Model validation failed.",
             401: "The request authorization failed",
@@ -114,8 +125,8 @@ class BunnyDNSClient(object):
         # Get Domain ID from list
         try:
             domain_id = self._map_domain_name_to_id(domain)
-        except BunnyDNSClientAPIException404:
-            raise BunnyDNSClientAPIExceptionDomainNotFound
+        except BunnyDNSClientAPIException404 as exc:
+            raise BunnyDNSClientAPIExceptionDomainNotFound from exc
         # Map Record Type to integer
         params["Type"] = self._map_record_type_to_string(params["Type"])
         add_record_api_call = self._request(
@@ -130,6 +141,7 @@ class BunnyDNSClient(object):
         return add_record_api_call
 
     def delete_record(self, domain, record_id):
+        """Delete an existing record."""
         exception_messages = {
             400: "Failed deleting the DNS Record. See error response.",
             401: "The request authorization failed",
@@ -151,6 +163,7 @@ class BunnyDNSClient(object):
         return delete_record_api_call
 
     def get_domain(self, domain):
+        """Get details about a domain."""
         exception_messages = {
             401: "The request authorization failed",
             404: "The DNS Zone with the requested ID does not exist.",
@@ -159,8 +172,8 @@ class BunnyDNSClient(object):
         # Get Domain ID from list
         try:
             domain_id = self._map_domain_name_to_id(domain)
-        except BunnyDNSClientAPIException404:
-            raise BunnyDNSClientAPIExceptionDomainNotFound
+        except BunnyDNSClientAPIException404 as exc:
+            raise BunnyDNSClientAPIExceptionDomainNotFound from exc
         get_domain_record_api_call = self._request(
             method="GET",
             path="/dnszone/" + str(domain_id),
@@ -173,6 +186,7 @@ class BunnyDNSClient(object):
         return get_domain_record_api_call
 
     def _map_domain_name_to_id(self, domain_name):
+        """Map domain name to its BunnyDNS ID."""
         # List Domains
         domains = self.list_zones()
         # Get Domain ID from list
@@ -182,39 +196,41 @@ class BunnyDNSClient(object):
                 domain_id = domain["Id"]
         if domain_id is None:
             raise BunnyDNSClientAPIException404
-        else:
-            return domain_id
 
-    def _map_record_type_to_string(self, type, reverse=False, name=None):
+        return domain_id
+
+    def _map_record_type_to_string(self, _type, reverse=False, name=None):
+        """Map a record type to a string."""
         type_map = {
             "A": 0,
             "AAAA": 1,
             "CNAME": 2,
             "TXT": 3,
             "MX": 4,
-            "Redirect": 5,
-            "Flatten": 6,
-            "PullZone": 7,
+            "REDIRECT": 5,
+            "Flatten": 6,  # This type is unused.
+            "PULLZONE": 7,
             "SRV": 8,
             "CAA": 9,
             "PTR": 10,
-            "Script": 11,
+            "SCRIPT": 11,
             "NS": 12,
         }
         if reverse:
             type_map = {v: k for k, v in type_map.items()}
             # Mapping back Bunny's CNAME to OctoDNS ALIAS record,
             # but only for the root label (name is an empty string)
-            if isinstance(name, str) and not len(name):
+            if isinstance(name, str) and not name:
                 type_map[2] = "ALIAS"
         else:
             # ALIAS record on root label is supported,
             # but called CNAME in BunnyDNS
             type_map["ALIAS"] = type_map["CNAME"]
-        type_mapped = type_map[type]
+        type_mapped = type_map[_type]
         return type_mapped
 
     def lookup_domain_records(self, domain):
+        """Lookup domain records from domain data."""
         domain_contents = self.get_domain(domain)
 
         # Abstract away the type IDs

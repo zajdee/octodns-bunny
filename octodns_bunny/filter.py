@@ -1,12 +1,14 @@
+"""The BunnyDNS filters."""
+
+# pylint: disable=protected-access
+
 from octodns.processor.base import BaseProcessor
 
 
 class BunnyDNSFilter(BaseProcessor):
     '''
-    We use the URLFWD records to support Bunny's PullZone, Script,
-    and Redirect records.
-    BunnyDNS uses zero TTL for script and redirect records.
-    This processor cleans up the URLFWD records to match the standard.
+    BunnyDNS uses zero TTL for the script and redirect records.
+    This processor cleans up these records to match the standard.
 
     Use in your config as:
     processors:
@@ -31,19 +33,15 @@ class BunnyDNSFilter(BaseProcessor):
         - bunnydns
     '''
 
-    def __init__(self, name):
-        super().__init__(name)
-
-    def cleanup_URLFWD(self, record):
-        target = record.values[0].target
-        if target.startswith('pz://'):
-            return
-        record.ttl = 0
-
+    # pylint: disable=arguments-differ
     def process_source_zone(self, zone, *args, **kwargs):
+        # pylint: disable=unused-argument
         for record in zone.records:
             if record.lenient:
                 continue
-            if record._type == "URLFWD":
-                self.cleanup_URLFWD(record)
+            if record._type in [
+                'BunnyDNSProvider/SCRIPT',
+                'BunnyDNSProvider/REDIRECT',
+            ]:
+                record.ttl = 0
         return zone

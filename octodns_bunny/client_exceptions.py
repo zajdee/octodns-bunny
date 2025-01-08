@@ -1,11 +1,15 @@
+"""BunnyDNS Client Exceptions."""
+
 from octodns.provider import ProviderException
 
 
 class BunnyDNSClientAPIException(ProviderException):
-    pass
+    """Basic BunnyDNS exception."""
 
 
 class BunnyDNSClientAPIException400(BunnyDNSClientAPIException):
+    """API exception - server side issue."""
+
     def __init__(self, error_message=None):
         if error_message is None:
             super().__init__("Unknown Server Side issue")
@@ -14,6 +18,8 @@ class BunnyDNSClientAPIException400(BunnyDNSClientAPIException):
 
 
 class BunnyDNSClientAPIException401(BunnyDNSClientAPIException):
+    """API exception - unauthorized."""
+
     def __init__(self, error_message=None):
         if error_message is None:
             super().__init__("Unauthorized")
@@ -22,6 +28,8 @@ class BunnyDNSClientAPIException401(BunnyDNSClientAPIException):
 
 
 class BunnyDNSClientAPIException404(BunnyDNSClientAPIException):
+    """API exception - not found."""
+
     def __init__(self, error_message=None):
         if error_message is None:
             super().__init__("Not Found")
@@ -30,6 +38,8 @@ class BunnyDNSClientAPIException404(BunnyDNSClientAPIException):
 
 
 class BunnyDNSClientAPIException500(BunnyDNSClientAPIException):
+    """API exception - server error."""
+
     def __init__(self, error_message=None):
         if error_message is None:
             super().__init__("Server Error")
@@ -38,13 +48,10 @@ class BunnyDNSClientAPIException500(BunnyDNSClientAPIException):
 
 
 class BunnyDNSClientAPIExceptionDomainNotFound(BunnyDNSClientAPIException):
+    """API exception - domain not found."""
+
     def __init__(self, error_message=None):
         if error_message is None:
             super().__init__("Domain Not Found")
         else:
             super().__init__(error_message)
-
-
-class BunnyDNSClientAPIExceptionType(BunnyDNSClientAPIException):
-    def __init__(self, error_message):
-        super().__init__(error_message)
