@@ -49,7 +49,9 @@ class BunnyDNSClient:
                 params=params,
             )
         )
-        api_call = self._api_session.send(prepared_api_call, timeout=10)
+        # Higher timeout is necessary, because some operations (like creating the
+        # DNS accelerated records) take a really long time to process by the BunnyDNS API.
+        api_call = self._api_session.send(prepared_api_call, timeout=30)
         if api_call.status_code in exception_messages.keys():
             # error_message = exception_messages[api_call.status_code]
             error_message = f"{exception_messages[api_call.status_code]} Data: {api_call.text}"
